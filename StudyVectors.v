@@ -83,18 +83,6 @@ eapply Exists2_cons_hd.
 trivial.
 Qed.
 
-Definition VecEq {n} (a b: t nat n): Prop :=
-  a c= b /\ b c= a.
-
-Check VecEq.
-
-Lemma test4: VecEq [2;3] [2;3].
-Proof.
-compute.
-split; repeat (eapply Forall2_cons; trivial) || eapply Forall2_nil.
-Qed.
-
-
 
 Lemma test5: ~ [1;4;5] = [2;34;6].
 Proof.
@@ -106,7 +94,7 @@ Proof.
 trivial.
 Qed.
 
-Lemma test7: forall {n} (a b: t nat n), a = b -> a c= b. 
+Lemma vec_eq_impl_incl: forall {n} (a b: t nat n), a = b -> a c= b. 
 intros. compute.
 rewrite <- H.
 apply Forall2_nth. intros.
@@ -115,7 +103,7 @@ Qed.
 
 Check [1;2] = 1::[2].
 
-Lemma inclusion_antisymm: forall {n} (a b: t nat n), a c= b /\ b c= a -> a = b.
+Lemma vec_inclusion_antisymm: forall {n} (a b: t nat n), a c= b /\ b c= a -> a = b.
 intros.
 compute in H. destruct H as [H0 H1].
 dependent induction H0. trivial.
@@ -127,7 +115,14 @@ apply forall2_tl in H1. apply IHForall2 in H1.
 rewrite H1; rewrite H3. trivial.
 Qed.
 
-Check test7.
+Lemma test8: forall {n} (a b: t nat n), ~(a c= b) <-> VecNotIncluded a b.
+intros. split; intros.
+compute in H. 
+Search (_ -> False -> _).
+Check except.
+compute.
+inversion H.
+compute. compute in H.
 
 Lemma test8: forall {n} (a b: t nat n), 0<n -> ~VecIncluded a b <-> VecNotIncluded a b.
 intros.

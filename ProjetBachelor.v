@@ -33,4 +33,6 @@ Qed.
 Lemma vec_eq_impl_incl: forall {n} (a b: n.-tuple _), a = b -> a c= b.
 intros.
 rewrite H.
+apply /allP.
 apply /allP. intros [x y] H_in.
+case in H_in.
