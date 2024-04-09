@@ -136,18 +136,31 @@ Search In.
 Check In.
 Check In_nth.
 
-Search ((~ Forall _) <-> Exists (~ _)).
+Search ((?a -> ?b) <-> (~?b -> ~?a)).
+
+Lemma contrapose (P Q: Prop) : (P -> Q) -> ~Q -> ~P.
+Proof.
+compute. intros. apply H0, H, H1.
+Qed.
+
+Require Import Coq.Logic.Classical_Prop.
+
+Lemma contrapose1 (P Q: Prop) : ((~P) -> Q) -> (~Q -> P).
+Proof.
+Admitted.
 
 Lemma vec_exists2_iff_not_forall2 {n} {A} R (a b: t A (S n)):
   Exists2 R a b <-> ~ (Forall2 (fun x y => ~ R x y) a b).
 Proof.
 split.
-- compute.
-  intros.
+- compute. intros.
   induction H.
-  -- apply forall2_hd in H0. destruct H0. trivial.
-  -- apply forall2_tl in H0. destruct IHExists2. trivial.
-- admit.
+  + apply forall2_hd in H0. contradiction H0.
+  + destruct IHExists2.
+    apply forall2_tl in H0.
+    trivial.
+- apply contrapose1.
+  admit.
 Admitted.
 
 Search (_ <= _ -> _ < _).
@@ -181,14 +194,6 @@ split; intros.
   apply H, to_list_Forall2. trivial.
 Qed.
 
-Lemma test8: forall {n} (a b: t nat n), 0<n -> ~VecIncluded a b <-> VecNotIncluded a b.
-intros.
-split.
--admit.
-- vm_compute. 
-intros. induction n. easy. (* SearchPattern (_ < _ -> _). easy. apply PeanoNat.Nat.lt_succ_l in H. absurd H. *)
-admit.
-Admitted.
 
 Definition VecComparable {n} (a b: t nat n): Prop :=
   a c= b \/ b c= a.
