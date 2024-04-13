@@ -4,6 +4,7 @@ Require Import Bvector.
 Require Import Logic.
 Require Import Equality.
 Require Import Coq.Arith.Arith.
+Require Import Setoids.Setoid.
 
 Lemma forall2_hd: forall {n} A (R: A->A-> Prop) x1 x2 (v1 v2: t A n), 
   Forall2 R (x1::v1) (x2::v2) -> R x1 x2.
@@ -112,7 +113,7 @@ Check [1;2] = 1::[2].
 Lemma vec_inclusion_antisymm: forall {n} (a b: t nat n), a c= b /\ b c= a <-> a = b.
 split ; intros.
 - compute in H. destruct H as [H0 H1].
-  dependent induction H0. trivial.
+  dependent induction H0. reflexivity.
   assert (x2<=x1).
   apply (forall2_hd) in H1; trivial.
   assert (x1=x2).
@@ -147,7 +148,39 @@ Require Import Coq.Logic.Classical_Prop.
 
 Lemma contrapose1 (P Q: Prop) : ((~P) -> Q) -> (~Q -> P).
 Proof.
+intros.
 Admitted.
+
+Lemma forall2_neg_impl_neg_forall2 {n A} R (a b: t A (S n)):
+  Forall2 (fun x y => ~ R x y) a b -> ~ (Forall2 R a b).
+Proof.
+intros.
+compute. intro.
+dependent induction H0.
+apply forall2_hd in H.
+contradiction H.
+Qed.
+
+Lemma forall2_iff_neg_forall2_neg_relation {n A} R (a b: t A (S n)):
+  Forall2 R a b <-> ~(Forall2 (fun x y => ~ R x y) a b).
+Proof.
+split.
+intros. intro.
+dependent induction H0.
+contradiction H1.
+apply forall2_hd in H.
+assumption.
+Admitted.
+
+Theorem dist_not_exists : forall (X:Type) (P: X-> Prop),
+  (forall x, P x) -> ~(exists x, ~ P x).
+Proof.
+intros. intros [x Hx].
+unfold not in Hx.
+apply Hx.
+apply H.
+Qed.
+
 
 Lemma vec_exists2_iff_not_forall2 {n} {A} R (a b: t A (S n)):
   Exists2 R a b <-> ~ (Forall2 (fun x y => ~ R x y) a b).
@@ -159,9 +192,20 @@ split.
   + destruct IHExists2.
     apply forall2_tl in H0.
     trivial.
-- apply contrapose1.
-  admit.
-Admitted.
+- intros.
+  apply forall2_iff_neg_forall2_neg_relation in H.
+  assert (a = (hd a :: tl a) /\ b = (hd b :: tl b)). 
+  { split. 
+    dependent induction a. compute. reflexivity.
+    dependent induction b. compute. reflexivity.
+  }
+  destruct H0.
+  rewrite H0, H1.
+  apply Exists2_cons_hd.
+  rewrite H0, H1 in H.
+  apply forall2_hd in H.
+  assumption.
+Qed.
 
 Search (_ <= _ -> _ < _).
 Search (_ < _ -> _ <= _).
@@ -194,12 +238,46 @@ split; intros.
   apply H, to_list_Forall2. trivial.
 Qed.
 
+Lemma vec_not_inclusion_contra {n} (a b: t _ (S n)):
+  a c= b <-> ~(a c/= b).
+Proof.
+split.
+unfold not. intros. apply vec_not_inclusion in H0. unfold not in H0. contradiction.
+apply NNPP. intro.
+apply imply_to_and in H. destruct H. apply vec_not_inclusion in H0. unfold not in H, H0. contradiction.
+Qed.
 
 Definition VecComparable {n} (a b: t nat n): Prop :=
   a c= b \/ b c= a.
 
+(*
+Definition VecNotComparable {n} (a b: t nat n): Prop :=
+  ~ VecComparable a b.*)
+
 Definition VecNotComparable {n} (a b: t nat n): Prop :=
   a c/= b /\ b c/= a.
+
+Lemma lkjsalkjfdsa {n} (a b: t _ (S n)):
+  VecComparable a b <-> ~ (VecNotComparable a b).
+Proof.
+split.
++ intro. unfold not.
+  intro. unfold VecComparable in H. unfold VecNotComparable in H0.
+  destruct H0.
+  destruct H.
+  - apply vec_not_inclusion in H0. unfold not in H0. 
+    contradiction H0.
+  - apply vec_not_inclusion in H1. unfold not in H1.
+    contradiction H1.
++ intro. unfold VecNotComparable in H.
+  apply not_and_or in H.
+  unfold VecComparable.
+  destruct H.
+  apply vec_not_inclusion_contra in H. left; trivial.
+  apply vec_not_inclusion_contra in H. right; trivial.
+Qed.
+
+Search "contra".
 
 (* Il faut définir les vecteurs symboliques *)
 
