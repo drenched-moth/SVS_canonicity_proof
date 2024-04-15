@@ -24,11 +24,25 @@ Compute 1 <=? 1.
 Compute Nat.leb 1 1.
 Compute Nat.leb 1 2.
 
-Notation "v1 c=? v2" := (fold_left andb true (map2 (Nat.leb) v1 v2)) (at level 50, left associativity).
+(*Notation "v1 c=? v2" := (fold_left andb true (map2 (Nat.leb) v1 v2)) (at level 50, left associativity).
+*)
+
+Definition VecsToBoolVec {n} Rb (a b: t nat n): Bvector n :=
+  map2 Rb a b.
+
+Check VecsToBoolVec Nat.leb [23;3] [1;2].
+Compute VecsToBoolVec Nat.leb [23;3] [1;2].
+Check VecsToBoolVec Nat.leb [1;5] [2;4].
+Compute VecsToBoolVec Nat.leb [1;5] [2;4].
+
+Check fold_right andb (VecsToBoolVec Nat.leb [1;5] [2;4]) true.
+Compute fold_right andb (VecsToBoolVec Nat.leb [1;5] [2;4]) true.
+
+Notation "v1 c=? v2" := (fold_right andb (VecsToBoolVec Nat.leb v1 v2) true) (at level 50, left associativity). 
 
 Check [23;3] c=? [1;2].
 Compute [23;3] c=? [1;2].
-Check [23;3] = [1;2].
+Check [1;2] c=? [2;4].
 Compute [1;2] c=? [2;4].
 
 Lemma test: ~ ([23;3] = [1;2]).
@@ -69,11 +83,56 @@ Qed.
 
 Locate "<".
 
-Lemma jsp: 
-  forall {n} (a b: t nat n), ~(a c= b) -> Exists2 lt b a.
+Lemma VecIncludedBool_iff_head_tail {n} (ah bh: _) (av bv: t nat n):
+  (ah :: av) c=? (bh :: bv) = true <-> (ah <=? bh = true /\ av c=? bv = true).
 Proof.
-intros. compute in H .
-Abort.
+split.
++ intros.
+  inversion H.
+  split. 
+  - rewrite H1.
+    apply andb_prop in H1; destruct H1.
+    assumption.
+  - apply andb_prop in H1; destruct H1.
+    rewrite H0, H1. 
+    Search (_ && _). 
+    rewrite andb_diag. 
+    assumption.
++ intros.
+  destruct H.
+  simpl.
+  Search andb.
+  apply andb_true_iff.
+  split; assumption.
+Qed.
+
+Search (~(_ = true)).
+
+Lemma VecIncluded_iff_VecIncludedBool {n} (a b: t nat n):
+   a c=? b = true <-> a c= b.
+Proof.
+split.
+- intros.
+  dependent induction n.
+  + (* init *) 
+    assert (a=[]/\b=[]). { split; apply nil_spec. }
+    destruct H0. rewrite H0, H1. compute. apply Forall2_nil.
+  + assert (a = (hd a :: tl a) /\ b = (hd b :: tl b)). { split; apply eta. }
+    destruct H0. rewrite H0, H1.
+    rewrite H0, H1 in H.
+    apply VecIncludedBool_iff_head_tail in H. destruct H.
+    apply Forall2_cons.
+    ++  Search (_ <=? _). apply leb_complete. assumption.
+    ++  apply IHn in H2.
+        unfold "c=" in H2.
+        assumption.
+- intros.
+  dependent induction H. compute; trivial.
+  apply VecIncludedBool_iff_head_tail.
+  split.
+  + Search leb. apply leb_correct. assumption.
+  + assumption.
+Qed.
 
 Definition VecNotIncluded {n} (a b: t nat n): Prop :=
   Exists2 lt b a.
