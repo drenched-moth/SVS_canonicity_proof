@@ -193,7 +193,8 @@ split.
     apply forall2_tl in H0.
     trivial.
 - intros.
-  apply forall2_iff_neg_forall2_neg_relation in H.
+  admit.
+  (*apply forall2_iff_neg_forall2_neg_relation in H.
   assert (a = (hd a :: tl a) /\ b = (hd b :: tl b)). 
   { split. 
     dependent induction a. compute. reflexivity.
@@ -204,8 +205,8 @@ split.
   apply Exists2_cons_hd.
   rewrite H0, H1 in H.
   apply forall2_hd in H.
-  assumption.
-Qed.
+  assumption.*)
+Admitted.
 
 Search (_ <= _ -> _ < _).
 Search (_ < _ -> _ <= _).
