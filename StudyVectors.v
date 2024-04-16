@@ -134,12 +134,155 @@ split.
   + assumption.
 Qed.
 
+Definition VecNotIncludedBool {n} (a b: t nat n) :=
+  fold_right orb (VecsToBoolVec Nat.ltb b a) false. (* il faut au moins un élément b_i strictement plus petit que a_i pour que *a* ne soit pas inclu dans *b* *) 
+
 Definition VecNotIncluded {n} (a b: t nat n): Prop :=
   Exists2 lt b a.
 
 (* Je n'ai pas su comment faire une preuve par négation sur la définition précédente, 
 par conséquent je propose la définition alternative *)
 Notation "v1 c/= v2" := (VecNotIncluded v1 v2) (at level 50).
+
+
+Lemma VecNotIncludedBool_iff_head_tail {n} (ah bh: nat) (av bv: t nat n):
+  VecNotIncludedBool (ah :: av) (bh :: bv) = true <-> (bh <? ah  = true \/ VecNotIncludedBool av bv = true).
+split.
+- intros.
+  unfold VecNotIncludedBool in H.
+  inversion H.
+  Search (_ || _ = true). apply orb_true_iff in H1.
+  destruct H1. 
+  rewrite H0. left. compute. reflexivity.
+  right. rewrite H0. Search (_ || true). rewrite orb_true_r. unfold VecNotIncludedBool. assumption.
+- intros.
+  destruct H.
+  unfold VecNotIncludedBool.
+  simpl.
+  apply orb_true_iff. left; assumption.
+  unfold VecNotIncludedBool.
+  simpl.
+  apply orb_true_iff. right; assumption.
+Qed.
+  
+Lemma VecNotIncluded_iff_VecNotIncludedBool {n} (a b: t nat (S n)):
+  a c/= b <-> VecNotIncludedBool a b = true.
+Proof.
+split.
+- intros.
+  induction H.
+  + (* init *) 
+    apply VecNotIncludedBool_iff_head_tail. left. 
+    Search (_ <? _). apply Nat.ltb_lt. assumption.
+  + (* induction *)
+    apply VecNotIncludedBool_iff_head_tail. right.
+    assumption.
+- intros.
+  assert (a=(hd a :: tl a) /\ b=(hd b :: tl b)). { split; apply eta. }
+  destruct H0.
+  rewrite H0, H1 in H. rewrite H0, H1.
+  dependent induction n.
+  + (* init *) 
+    assert (tl a = [] /\ tl b = []). { split; apply nil_spec. }
+    destruct H2. rewrite H2 in H0, H. rewrite H3 in H1, H. rewrite H2, H3.
+    unfold "c/=". apply Exists2_cons_hd.
+    apply VecNotIncludedBool_iff_head_tail in H.
+    Search (_ = true \/ _ = true ). apply orb_true_iff in H. 
+    unfold VecNotIncludedBool in H. 
+    simpl in H. 
+    Search (_ || false). rewrite orb_false_r in H.
+    apply Nat.ltb_lt. 
+    assumption.
+  + apply VecNotIncludedBool_iff_head_tail in H.
+    destruct H.
+    ++  unfold "c/=".
+        apply Exists2_cons_hd.
+        apply Nat.ltb_lt.
+        assumption.
+    ++  unfold "c/=".
+        apply Exists2_cons_tl.
+        assert (tl a = (hd (tl a) :: tl (tl a)) /\ tl b = (hd (tl b) :: tl (tl b))). { split; apply eta. }
+        destruct H2. 
+        unfold "c/=" in IHn.
+        rewrite H2, H3.
+        apply IHn. rewrite <- H2. rewrite <- H3.
+        assumption.
+        assumption.
+        assumption.
+Qed.
+
+Lemma VecNotIncludedBool_iff_VecIncludedBool_false {n} (a b: t nat (S n)):
+  VecNotIncludedBool a b = true <-> a c=? b = false.
+Proof.
+split.
+- intros.
+  assert (a=(hd a :: tl a) /\ b=(hd b :: tl b)). { split; apply eta. }
+  destruct H0.
+  dependent induction n.
+  + (* init *)
+    rewrite H0, H1 in H. unfold VecNotIncludedBool in H. simpl in H.
+    apply orb_true_iff in H.
+    destruct H.
+    ++  apply Nat.ltb_lt in H.
+        rewrite H0, H1.
+        simpl.
+        apply andb_false_iff.
+        left. apply leb_iff_conv.
+        assumption.
+    ++  assert (tl a = [] /\ tl b = []). { split; apply nil_spec. }
+        destruct H2.
+        rewrite H2, H3 in H.
+        compute in H.
+        rewrite H0, H1. 
+        simpl.
+        apply andb_false_iff.
+        right.
+        rewrite H2, H3. 
+        compute.
+        symmetry. assumption.
+  + rewrite H0, H1.
+    simpl.
+    apply andb_false_iff. 
+    rewrite H0, H1 in H.
+    apply VecNotIncludedBool_iff_head_tail in H.
+    destruct H.
+    ++  left.
+        Search (_ <=? _ = false). apply leb_iff_conv.
+        Search (_ <? _ = true). apply Nat.ltb_lt in H.
+        assumption.
+    ++  right.
+        apply IHn.
+        assumption.
+        apply eta.
+        apply eta.
+- intros.
+  assert (a=(hd a :: tl a) /\ b=(hd b :: tl b)). { split; apply eta. }
+  destruct H0.
+  induction n.
+  + (* init *)
+    assert (tl a = [] /\ tl b = []). { split; apply nil_spec. }
+    destruct H2.
+    rewrite H0, H1. rewrite H0, H1 in H.
+    rewrite H2, H3 in H. rewrite H2, H3.
+    simpl in H. Search (_ && _ = false). apply andb_false_iff in H. 
+    unfold VecNotIncludedBool. simpl.
+    Search (_ || _ = true). rewrite orb_true_iff.
+    destruct H.
+    ++  left. apply leb_iff_conv in H. apply Nat.ltb_lt.
+        assumption.
+    ++  right. auto. (* pour symmetry; assumption. *)
+  + (* induction *)
+    rewrite H0, H1.
+    apply VecNotIncludedBool_iff_head_tail.
+    rewrite H0, H1 in H. simpl in H. apply andb_false_iff in H.
+    destruct H.
+    ++  left. apply leb_iff_conv in H. apply Nat.ltb_lt. assumption.
+    ++  right.
+        apply IHn.
+        assumption.
+        apply eta. apply eta.
+Qed.
+
 
 Lemma test3: [3; 5; 6] c/= [4; 4; 4].
 Proof.
@@ -198,17 +341,10 @@ Check In_nth.
 
 Search ((?a -> ?b) <-> (~?b -> ~?a)).
 
-Lemma contrapose (P Q: Prop) : (P -> Q) -> ~Q -> ~P.
-Proof.
-compute. intros. apply H0, H, H1.
-Qed.
 
+(*
 Require Import Coq.Logic.Classical_Prop.
-
-Lemma contrapose1 (P Q: Prop) : ((~P) -> Q) -> (~Q -> P).
-Proof.
-intros.
-Admitted.
+*)
 
 Lemma forall2_neg_impl_neg_forall2 {n A} R (a b: t A (S n)):
   Forall2 (fun x y => ~ R x y) a b -> ~ (Forall2 R a b).
@@ -221,15 +357,14 @@ contradiction H.
 Qed.
 
 Lemma forall2_iff_neg_forall2_neg_relation {n A} R (a b: t A (S n)):
-  Forall2 R a b <-> ~(Forall2 (fun x y => ~ R x y) a b).
+  Forall2 R a b -> ~(Forall2 (fun x y => ~ R x y) a b).
 Proof.
-split.
 intros. intro.
 dependent induction H0.
 contradiction H1.
 apply forall2_hd in H.
 assumption.
-Admitted.
+Qed.
 
 Theorem dist_not_exists : forall (X:Type) (P: X-> Prop),
   (forall x, P x) -> ~(exists x, ~ P x).
@@ -241,70 +376,41 @@ apply H.
 Qed.
 
 
-Lemma vec_exists2_iff_not_forall2 {n} {A} R (a b: t A (S n)):
-  Exists2 R a b <-> ~ (Forall2 (fun x y => ~ R x y) a b).
-Proof.
-split.
-- compute. intros.
-  induction H.
-  + apply forall2_hd in H0. contradiction H0.
-  + destruct IHExists2.
-    apply forall2_tl in H0.
-    trivial.
-- intros.
-  admit.
-  (*apply forall2_iff_neg_forall2_neg_relation in H.
-  assert (a = (hd a :: tl a) /\ b = (hd b :: tl b)). 
-  { split. 
-    dependent induction a. compute. reflexivity.
-    dependent induction b. compute. reflexivity.
-  }
-  destruct H0.
-  rewrite H0, H1.
-  apply Exists2_cons_hd.
-  rewrite H0, H1 in H.
-  apply forall2_hd in H.
-  assumption.*)
-Admitted.
-
-Search (_ <= _ -> _ < _).
-Search (_ < _ -> _ <= _).
-Search (~(_ <= _) -> _).
-
 Lemma vec_not_inclusion: forall {n} (a b: t nat (S n)), ~(a c= b) <-> a c/= b.
 intros.
 split; intros.
-- compute. compute in H.
-  apply vec_exists2_iff_not_forall2.
-  intro. destruct H.
-  apply to_list_Forall2, List.Forall2_flip in H0.
-  assert (List.Forall2 (fun x y:nat => ~ S y <= x) (to_list a) (to_list b) -> List.Forall2 (fun x y : nat => x <= y) (to_list a) (to_list b)).
-  { apply List.Forall2_impl. 
-    intros.
-    apply Arith_prebase.gt_S_le_stt.
-    apply not_le. trivial. }
-  apply to_list_Forall2, H.
-  trivial.
-- intro. compute in H.
-  apply vec_exists2_iff_not_forall2 in H.
-  destruct H.
-  compute in H0.
-  apply to_list_Forall2, List.Forall2_flip.
-  assert (List.Forall2 (fun x y:nat => x <= y) (to_list a) (to_list b) -> List.Forall2 (fun x y : nat => ~ S y <= x) (to_list a) (to_list b)).
-  { apply List.Forall2_impl.
-    intros.
-    apply Arith_prebase.gt_not_le_stt.
-    apply Arith_prebase.le_gt_S_stt. trivial. }
-  apply H, to_list_Forall2. trivial.
+- apply VecNotIncluded_iff_VecNotIncludedBool.
+  apply VecNotIncludedBool_iff_VecIncludedBool_false.
+  rewrite <- VecIncluded_iff_VecIncludedBool in H.
+  Search (~(_=true)).
+  apply not_true_is_false.
+  assumption.
+- rewrite <- VecIncluded_iff_VecIncludedBool.
+  Search (_ <> true).
+  apply not_true_iff_false.
+  Search (_ c=? _).
+  apply VecNotIncludedBool_iff_VecIncludedBool_false.
+  Search (_ c/= _).
+  apply VecNotIncluded_iff_VecNotIncludedBool.  
+  assumption.
 Qed.
 
 Lemma vec_not_inclusion_contra {n} (a b: t _ (S n)):
   a c= b <-> ~(a c/= b).
 Proof.
+Search (~_ <-> ~_).
 split.
-unfold not. intros. apply vec_not_inclusion in H0. unfold not in H0. contradiction.
-apply NNPP. intro.
-apply imply_to_and in H. destruct H. apply vec_not_inclusion in H0. unfold not in H, H0. contradiction.
+- intros.
+  rewrite <- vec_not_inclusion.
+  intro. 
+  contradiction.
+- intros.
+  rewrite <- vec_not_inclusion in H.
+  apply VecIncluded_iff_VecIncludedBool.
+  rewrite <- VecIncluded_iff_VecIncludedBool in H.
+  rewrite not_true_iff_false in H.
+  apply not_false_iff_true in H.
+  assumption.
 Qed.
 
 Definition VecComparable {n} (a b: t nat n): Prop :=
@@ -329,12 +435,22 @@ split.
     contradiction H0.
   - apply vec_not_inclusion in H1. unfold not in H1.
     contradiction H1.
-+ intro. unfold VecNotComparable in H.
-  apply not_and_or in H.
++ intro. 
+  unfold VecNotComparable in H.
   unfold VecComparable.
-  destruct H.
-  apply vec_not_inclusion_contra in H. left; trivial.
-  apply vec_not_inclusion_contra in H. right; trivial.
+  rewrite vec_not_inclusion_contra.
+  rewrite vec_not_inclusion_contra.
+  rewrite -> VecNotIncluded_iff_VecNotIncludedBool in H. 
+  rewrite -> VecNotIncluded_iff_VecNotIncludedBool in H.
+  rewrite <- andb_true_iff in H.
+  apply not_true_iff_false in H.
+  apply andb_false_iff in H.
+
+  rewrite VecNotIncluded_iff_VecNotIncludedBool.
+  rewrite VecNotIncluded_iff_VecNotIncludedBool.
+  rewrite not_true_iff_false.
+  rewrite not_true_iff_false.
+  assumption.
 Qed.
 
 Search "contra".
