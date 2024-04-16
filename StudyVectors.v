@@ -117,7 +117,8 @@ split.
   + (* init *) 
     assert (a=[]/\b=[]). { split; apply nil_spec. }
     destruct H0. rewrite H0, H1. compute. apply Forall2_nil.
-  + assert (a = (hd a :: tl a) /\ b = (hd b :: tl b)). { split; apply eta. }
+  + (* induction *)
+    assert (a = (hd a :: tl a) /\ b = (hd b :: tl b)). { split; apply eta. }
     destruct H0. rewrite H0, H1.
     rewrite H0, H1 in H.
     apply VecIncludedBool_iff_head_tail in H. destruct H.
@@ -193,7 +194,8 @@ split.
     Search (_ || false). rewrite orb_false_r in H.
     apply Nat.ltb_lt. 
     assumption.
-  + apply VecNotIncludedBool_iff_head_tail in H.
+  + (* induction *)
+    apply VecNotIncludedBool_iff_head_tail in H.
     destruct H.
     ++  unfold "c/=".
         apply Exists2_cons_hd.
@@ -240,7 +242,8 @@ split.
         rewrite H2, H3. 
         compute.
         symmetry. assumption.
-  + rewrite H0, H1.
+  + (* induction *)
+    rewrite H0, H1.
     simpl.
     apply andb_false_iff. 
     rewrite H0, H1 in H.
@@ -335,17 +338,6 @@ apply Exists2_cons_hd.
 assumption.
 Qed.
 
-Search In.
-Check In.
-Check In_nth.
-
-Search ((?a -> ?b) <-> (~?b -> ~?a)).
-
-
-(*
-Require Import Coq.Logic.Classical_Prop.
-*)
-
 Lemma forall2_neg_impl_neg_forall2 {n A} R (a b: t A (S n)):
   Forall2 (fun x y => ~ R x y) a b -> ~ (Forall2 R a b).
 Proof.
@@ -416,14 +408,10 @@ Qed.
 Definition VecComparable {n} (a b: t nat n): Prop :=
   a c= b \/ b c= a.
 
-(*
-Definition VecNotComparable {n} (a b: t nat n): Prop :=
-  ~ VecComparable a b.*)
-
 Definition VecNotComparable {n} (a b: t nat n): Prop :=
   a c/= b /\ b c/= a.
 
-Lemma lkjsalkjfdsa {n} (a b: t _ (S n)):
+Lemma VecComparable_iff_not_VecNotComparable {n} (a b: t _ (S n)):
   VecComparable a b <-> ~ (VecNotComparable a b).
 Proof.
 split.
@@ -445,7 +433,6 @@ split.
   rewrite <- andb_true_iff in H.
   apply not_true_iff_false in H.
   apply andb_false_iff in H.
-
   rewrite VecNotIncluded_iff_VecNotIncludedBool.
   rewrite VecNotIncluded_iff_VecNotIncludedBool.
   rewrite not_true_iff_false.
