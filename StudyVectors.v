@@ -141,8 +141,7 @@ Definition VecNotIncludedBool {n} (a b: t nat n) :=
 Definition VecNotIncluded {n} (a b: t nat n): Prop :=
   Exists2 lt b a.
 
-(* Je n'ai pas su comment faire une preuve par négation sur la définition précédente, 
-par conséquent je propose la définition alternative *)
+Notation "v1 c/=? v2" := (VecNotIncludedBool v1 v2) (at level 50).
 Notation "v1 c/= v2" := (VecNotIncluded v1 v2) (at level 50).
 
 
@@ -165,9 +164,9 @@ split.
   simpl.
   apply orb_true_iff. right; assumption.
 Qed.
-  
+
 Lemma VecNotIncluded_iff_VecNotIncludedBool {n} (a b: t nat (S n)):
-  a c/= b <-> VecNotIncludedBool a b = true.
+  a c/= b <-> a c/=? b = true.
 Proof.
 split.
 - intros.
@@ -214,7 +213,7 @@ split.
 Qed.
 
 Lemma VecNotIncludedBool_iff_VecIncludedBool_false {n} (a b: t nat (S n)):
-  VecNotIncludedBool a b = true <-> a c=? b = false.
+  a c/=? b = true <-> a c=? b = false.
 Proof.
 split.
 - intros.
@@ -286,34 +285,12 @@ split.
         apply eta. apply eta.
 Qed.
 
-
-Lemma test3: [3; 5; 6] c/= [4; 4; 4].
-Proof.
-compute.
-eapply Exists2_cons_tl.
-eapply Exists2_cons_hd.
-trivial.
-Qed.
-
-
-Lemma test5: ~ [1;4;5] = [2;34;6].
-Proof.
-discriminate.
-Qed.
-
-Lemma test6: [1;0;67] = [1;0;67].
-Proof.
-trivial.
-Qed.
-
 Lemma vec_eq_impl_incl: forall {n} (a b: t nat n), a = b -> a c= b. 
 intros. compute.
 rewrite <- H.
 apply Forall2_nth. intros.
 trivial.
 Qed. 
-
-Check [1;2] = 1::[2].
 
 Lemma vec_inclusion_antisymm: forall {n} (a b: t nat n), a c= b /\ b c= a <-> a = b.
 split ; intros.
@@ -358,17 +335,11 @@ apply forall2_hd in H.
 assumption.
 Qed.
 
-Theorem dist_not_exists : forall (X:Type) (P: X-> Prop),
-  (forall x, P x) -> ~(exists x, ~ P x).
+
+
+Lemma not_VecIncluded_iff_VecNotIncluded {n} (a b: t nat (S n)):
+  ~(a c= b) <-> a c/= b.
 Proof.
-intros. intros [x Hx].
-unfold not in Hx.
-apply Hx.
-apply H.
-Qed.
-
-
-Lemma vec_not_inclusion: forall {n} (a b: t nat (S n)), ~(a c= b) <-> a c/= b.
 intros.
 split; intros.
 - apply VecNotIncluded_iff_VecNotIncludedBool.
@@ -387,17 +358,17 @@ split; intros.
   assumption.
 Qed.
 
-Lemma vec_not_inclusion_contra {n} (a b: t _ (S n)):
+Lemma not_VecIncluded_iff_VecNotIncluded_contra {n} (a b: t _ (S n)):
   a c= b <-> ~(a c/= b).
 Proof.
 Search (~_ <-> ~_).
 split.
 - intros.
-  rewrite <- vec_not_inclusion.
+  rewrite <- not_VecIncluded_iff_VecNotIncluded.
   intro. 
   contradiction.
 - intros.
-  rewrite <- vec_not_inclusion in H.
+  rewrite <- not_VecIncluded_iff_VecNotIncluded in H.
   apply VecIncluded_iff_VecIncludedBool.
   rewrite <- VecIncluded_iff_VecIncludedBool in H.
   rewrite not_true_iff_false in H.
@@ -419,15 +390,15 @@ split.
   intro. unfold VecComparable in H. unfold VecNotComparable in H0.
   destruct H0.
   destruct H.
-  - apply vec_not_inclusion in H0. unfold not in H0. 
+  - apply not_VecIncluded_iff_VecNotIncluded in H0. unfold not in H0. 
     contradiction H0.
-  - apply vec_not_inclusion in H1. unfold not in H1.
+  - apply not_VecIncluded_iff_VecNotIncluded in H1. unfold not in H1.
     contradiction H1.
 + intro. 
   unfold VecNotComparable in H.
   unfold VecComparable.
-  rewrite vec_not_inclusion_contra.
-  rewrite vec_not_inclusion_contra.
+  rewrite not_VecIncluded_iff_VecNotIncluded_contra.
+  rewrite not_VecIncluded_iff_VecNotIncluded_contra.
   rewrite -> VecNotIncluded_iff_VecNotIncludedBool in H. 
   rewrite -> VecNotIncluded_iff_VecNotIncludedBool in H.
   rewrite <- andb_true_iff in H.
