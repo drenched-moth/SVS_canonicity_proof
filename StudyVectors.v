@@ -296,12 +296,12 @@ Lemma vec_inclusion_antisymm: forall {n} (a b: t nat n), a c= b /\ b c= a <-> a 
 split ; intros.
 - compute in H. destruct H as [H0 H1].
   dependent induction H0. reflexivity.
-  assert (x2<=x1).
-  apply (forall2_hd) in H1; trivial.
-  assert (x1=x2).
-  apply Nat.le_antisymm; assumption.
+  assert (x2<=x1). {
+  apply (forall2_hd) in H1; trivial. }
+  assert (x1=x2). {
+  apply Nat.le_antisymm; assumption. }
   apply forall2_tl in H1. apply IHForall2 in H1.
-  rewrite H1; rewrite H3. trivial.
+  rewrite H1; rewrite H3. reflexivity.
 - dependent induction H.
   split; apply vec_eq_impl_incl; trivial.
 Qed.
