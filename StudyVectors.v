@@ -198,77 +198,58 @@ split.
         apply IHn. assumption.
 Qed.
 
-Lemma VecNotIncludedBool_iff_VecIncludedBool_false {n} (a b: t nat (S n)):
+Lemma VecNotIncludedBool_iff_VecIncludedBool_false {n} (a b: t nat n):
   a c/=? b = true <-> a c=? b = false.
 Proof.
 split.
 - intros.
-  assert (a=(hd a :: tl a) /\ b=(hd b :: tl b)). { split; apply eta. }
-  destruct H0.
   dependent induction n.
   + (* init *)
-    rewrite H0, H1 in H. unfold VecNotIncludedBool in H. simpl in H.
-    apply orb_true_iff in H.
-    destruct H.
-    ++  apply Nat.ltb_lt in H.
-        rewrite H0, H1.
-        simpl.
-        apply andb_false_iff.
-        left. apply leb_iff_conv.
-        assumption.
-    ++  assert (tl a = [] /\ tl b = []). { split; apply nil_spec. }
-        destruct H2.
-        rewrite H2, H3 in H.
-        compute in H.
-        rewrite H0, H1. 
-        simpl.
-        apply andb_false_iff.
-        right.
-        rewrite H2, H3. 
-        compute.
-        symmetry. assumption.
+    assert (a=[] /\ b=[]). { split; apply nil_spec. }
+    destruct H0. 
+    rewrite H0, H1. rewrite H0, H1 in H.
+    compute in H.
+    apply eq_true_false_abs in H.
+    contradiction. reflexivity.
   + (* induction *)
-    rewrite H0, H1.
+    assert (a=(hd a :: tl a) /\ b=(hd b :: tl b)). { split; apply eta. }
+    destruct H0.
+    rewrite H0, H1. rewrite H0, H1 in H.
     simpl.
-    apply andb_false_iff. 
-    rewrite H0, H1 in H.
+    apply andb_false_iff.
     apply VecNotIncludedBool_iff_head_tail in H.
     destruct H.
-    ++  left.
-        Search (_ <=? _ = false). apply leb_iff_conv.
-        Search (_ <? _ = true). apply Nat.ltb_lt in H.
+    ++  left. 
+        apply leb_iff_conv. 
+        apply Nat.ltb_lt in H.
         assumption.
     ++  right.
         apply IHn.
         assumption.
-        apply eta.
-        apply eta.
 - intros.
-  assert (a=(hd a :: tl a) /\ b=(hd b :: tl b)). { split; apply eta. }
-  destruct H0.
   induction n.
   + (* init *)
-    assert (tl a = [] /\ tl b = []). { split; apply nil_spec. }
-    destruct H2.
-    rewrite H0, H1. rewrite H0, H1 in H.
-    rewrite H2, H3 in H. rewrite H2, H3.
-    simpl in H. Search (_ && _ = false). apply andb_false_iff in H. 
-    unfold VecNotIncludedBool. simpl.
-    Search (_ || _ = true). rewrite orb_true_iff.
-    destruct H.
-    ++  left. apply leb_iff_conv in H. apply Nat.ltb_lt.
-        assumption.
-    ++  right. auto. (* pour symmetry; assumption. *)
+    assert (a = [] /\ b = []). { split; apply nil_spec. }
+    destruct H0.
+    rewrite H0, H1 in H.
+    compute in H. 
+    apply eq_true_false_abs in H.
+    contradiction. reflexivity.
   + (* induction *)
-    rewrite H0, H1.
+    assert (a=(hd a :: tl a) /\ b=(hd b :: tl b)). { split; apply eta. }
+    destruct H0.
+    rewrite H0, H1. rewrite H0, H1 in H.
+    simpl in H.
+    apply andb_false_iff in H.
     apply VecNotIncludedBool_iff_head_tail.
-    rewrite H0, H1 in H. simpl in H. apply andb_false_iff in H.
     destruct H.
-    ++  left. apply leb_iff_conv in H. apply Nat.ltb_lt. assumption.
+    ++  left.
+        apply leb_iff_conv in H.
+        apply Nat.ltb_lt.
+        assumption.
     ++  right.
         apply IHn.
         assumption.
-        apply eta. apply eta.
 Qed.
 
 Lemma vec_eq_impl_incl: forall {n} (a b: t nat n), a = b -> a c= b. 
@@ -331,15 +312,11 @@ split; intros.
 - apply VecNotIncluded_iff_VecNotIncludedBool.
   apply VecNotIncludedBool_iff_VecIncludedBool_false.
   rewrite <- VecIncluded_iff_VecIncludedBool in H.
-  Search (~(_=true)).
   apply not_true_is_false.
   assumption.
 - rewrite <- VecIncluded_iff_VecIncludedBool.
-  Search (_ <> true).
   apply not_true_iff_false.
-  Search (_ c=? _).
   apply VecNotIncludedBool_iff_VecIncludedBool_false.
-  Search (_ c/= _).
   apply VecNotIncluded_iff_VecNotIncludedBool.  
   assumption.
 Qed.
