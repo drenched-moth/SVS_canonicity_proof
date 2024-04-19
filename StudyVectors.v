@@ -4,19 +4,62 @@ Require Import Bvector.
 Require Import Logic.
 Require Import Equality.
 Require Import Coq.Arith.Arith.
-Require Import Setoids.Setoid.
+(*Require Import Setoids.Setoid.*)
 
-Lemma forall2_hd: forall {n} A (R: A->A-> Prop) x1 x2 (v1 v2: t A n), 
-  Forall2 R (x1::v1) (x2::v2) -> R x1 x2.
-intros. 
-inversion_clear H. assumption.
-Qed.
-
-Lemma forall2_tl: forall {n} A (R: A->A-> Prop) x1 x2 (v1 v2: t A n),
-  Forall2 R (x1::v1) (x2::v2) -> Forall2 R v1 v2.
+Lemma forall2_hd {n A} R (a b: t A (S n)):
+  Forall2 R (hd a::tl a) (hd b::tl b) -> R (hd a) (hd b).
+Proof.
 intros.
-dependent induction H. assumption.
+inversion H.
+assumption.
 Qed.
+
+Lemma forall2_tl {n A} R (a b: t A (S n)):
+  Forall2 R (hd a::tl a) (hd b::tl b) -> Forall2 R (tl a) (tl b).
+Proof.
+intros.
+dependent induction H.
+assumption.
+Qed.
+
+Lemma forall2_hd_tl {n A} R (a b: t A (S n)):
+  Forall2 R a b -> (R (hd a) (hd b) /\  Forall2 R (tl a) (tl b)).
+Proof.
+intros.
+assert (a = (hd a:: tl a) /\ b = (hd b:: tl b)). { split; apply eta. }
+destruct H0. rewrite H0, H1 in H.
+split.
+- apply forall2_hd.
+  assumption.
+- apply forall2_tl.
+  assumption.
+Qed.
+
+Lemma forall2_arbitrary_hd {n A} R (ah bh: A) (av bv: t A n):
+  Forall2 R (ah::av) (bh::bv) -> R ah bh.
+Proof.
+intros.
+inversion H; trivial.
+Qed.
+
+Lemma forall2_arbitrary_tl {n A} R (ah bh: A) (av bv: t A n):
+  Forall2 R (ah::av) (bh::bv) -> Forall2 R av bv.
+Proof.
+intros.
+dependent induction H; trivial.
+Qed.
+
+Lemma forall2_arbitrary_hd_tl {n A} R (ah bh: A) (av bv: t A n):
+  Forall2 R (ah::av) (bh::bv) -> R ah bh /\ Forall2 R av bv.
+Proof.
+intros.
+split.
+- apply forall2_arbitrary_hd in H; trivial.
+- apply forall2_arbitrary_tl in H; trivial.
+Qed.
+
+(*
+Lemma forall2_hd*)
 
 Locate "<=?".
 
@@ -61,10 +104,6 @@ compute.
 trivial.
 Qed.
 
-Locate "<=".
-Check le.
-Check Forall2.
-
 Definition VecIncluded {n} (a b: t nat n): Prop :=
   Forall2 le a b.
 
@@ -81,8 +120,6 @@ apply Forall2_cons; repeat (trivial || apply le_S).
 apply Forall2_nil.
 Qed.
 
-Locate "<".
-
 Lemma VecIncludedBool_iff_head_tail {n} (ah bh: _) (av bv: t nat n):
   (ah :: av) c=? (bh :: bv) = true <-> (ah <=? bh = true /\ av c=? bv = true).
 Proof.
@@ -94,19 +131,15 @@ split.
     apply andb_prop in H1; destruct H1.
     assumption.
   - apply andb_prop in H1; destruct H1.
-    rewrite H0, H1. 
-    Search (_ && _). 
+    rewrite H0, H1.
     rewrite andb_diag. 
     assumption.
 + intros.
   destruct H.
   simpl.
-  Search andb.
   apply andb_true_iff.
   split; assumption.
 Qed.
-
-Search (~(_ = true)).
 
 Lemma VecIncluded_iff_VecIncludedBool {n} (a b: t nat n):
    a c=? b = true <-> a c= b.
@@ -115,15 +148,17 @@ split.
 - intros.
   dependent induction n.
   + (* init *) 
-    assert (a=[]/\b=[]). { split; apply nil_spec. }
-    destruct H0. rewrite H0, H1. compute. apply Forall2_nil.
+    assert (a=[] /\ b=[]). { split; apply nil_spec. }
+    destruct H0. rewrite H0, H1. 
+    apply Forall2_nil.
   + (* induction *)
     assert (a = (hd a :: tl a) /\ b = (hd b :: tl b)). { split; apply eta. }
     destruct H0. rewrite H0, H1.
     rewrite H0, H1 in H.
     apply VecIncludedBool_iff_head_tail in H. destruct H.
     apply Forall2_cons.
-    ++  Search (_ <=? _). apply leb_complete. assumption.
+    ++  apply leb_complete. 
+        assumption.
     ++  apply IHn in H2.
         unfold "c=" in H2.
         assumption.
@@ -131,7 +166,7 @@ split.
   dependent induction H. compute; trivial.
   apply VecIncludedBool_iff_head_tail.
   split.
-  + Search leb. apply leb_correct. assumption.
+  + apply leb_correct. assumption.
   + assumption.
 Qed.
 
@@ -151,10 +186,11 @@ split.
 - intros.
   unfold VecNotIncludedBool in H.
   inversion H.
-  Search (_ || _ = true). apply orb_true_iff in H1.
+  apply orb_true_iff in H1.
   destruct H1. 
-  rewrite H0. left. compute. reflexivity.
-  right. rewrite H0. Search (_ || true). rewrite orb_true_r. unfold VecNotIncludedBool. assumption.
+  rewrite H0. 
+  + left. compute. reflexivity.
+  + right. rewrite H0. rewrite orb_true_r. unfold VecNotIncludedBool. assumption.
 - intros.
   destruct H.
   unfold VecNotIncludedBool.
@@ -173,7 +209,7 @@ split.
   induction H.
   + (* init *) 
     apply VecNotIncludedBool_iff_head_tail. left. 
-    Search (_ <? _). apply Nat.ltb_lt. assumption.
+    apply Nat.ltb_lt. assumption.
   + (* induction *)
     apply VecNotIncludedBool_iff_head_tail. right.
     assumption.
@@ -182,7 +218,7 @@ split.
   + (* init *)
     assert (a=[] /\ b=[]). { split; apply nil_spec. }
     destruct H0. rewrite H0, H1 in H. compute in H.
-    unfold "c/=". Search (_ = _ -> False).
+    unfold "c/=".
     apply eq_true_false_abs in H.
     contradiction. reflexivity.
   + (* induction *)
@@ -195,7 +231,8 @@ split.
         apply Nat.ltb_lt.
         assumption.
     ++  apply Exists2_cons_tl.
-        apply IHn. assumption.
+        apply IHn. 
+        assumption.
 Qed.
 
 Lemma VecNotIncludedBool_iff_VecIncludedBool_false {n} (a b: t nat n):
@@ -206,8 +243,8 @@ split.
   dependent induction n.
   + (* init *)
     assert (a=[] /\ b=[]). { split; apply nil_spec. }
-    destruct H0. 
-    rewrite H0, H1. rewrite H0, H1 in H.
+    destruct H0.
+    rewrite H0, H1 in H.
     compute in H.
     apply eq_true_false_abs in H.
     contradiction. reflexivity.
@@ -261,14 +298,17 @@ Qed.
 
 Lemma vec_inclusion_antisymm: forall {n} (a b: t nat n), a c= b /\ b c= a <-> a = b.
 split ; intros.
-- compute in H. destruct H as [H0 H1].
-  dependent induction H0. reflexivity.
-  assert (x2<=x1). {
-  apply (forall2_hd) in H1; trivial. }
-  assert (x1=x2). {
-  apply Nat.le_antisymm; assumption. }
-  apply forall2_tl in H1. apply IHForall2 in H1.
-  rewrite H1; rewrite H3. reflexivity.
+- compute in H. 
+  destruct H as [H0 H1].
+  dependent induction H0.
+  + (* init *)
+    reflexivity.
+  + (* induction *)
+    apply forall2_arbitrary_hd_tl in H1; destruct H1.
+    assert (x1=x2). { apply Nat.le_antisymm; assumption. }
+    apply IHForall2 in H2.
+    rewrite H2; rewrite H3. 
+    reflexivity.
 - dependent induction H.
   split; apply vec_eq_impl_incl; trivial.
 Qed.
@@ -287,9 +327,9 @@ Lemma forall2_neg_impl_neg_forall2 {n A} R (a b: t A (S n)):
 Proof.
 intros.
 compute. intro.
-dependent induction H0.
-apply forall2_hd in H.
-contradiction H.
+dependent induction H.
+dependent induction H1.
+contradiction.
 Qed.
 
 Lemma forall2_iff_neg_forall2_neg_relation {n A} R (a b: t A (S n)):
@@ -298,13 +338,11 @@ Proof.
 intros. intro.
 dependent induction H0.
 contradiction H1.
-apply forall2_hd in H.
+apply forall2_arbitrary_hd in H.
 assumption.
 Qed.
 
-
-
-Lemma not_VecIncluded_iff_VecNotIncluded {n} (a b: t nat (S n)):
+Lemma not_VecIncluded_iff_VecNotIncluded {n} (a b: t nat n):
   ~(a c= b) <-> a c/= b.
 Proof.
 intros.
@@ -321,10 +359,9 @@ split; intros.
   assumption.
 Qed.
 
-Lemma not_VecIncluded_iff_VecNotIncluded_contra {n} (a b: t _ (S n)):
+Lemma not_VecIncluded_iff_VecNotIncluded_contra {n} (a b: t _ n):
   a c= b <-> ~(a c/= b).
 Proof.
-Search (~_ <-> ~_).
 split.
 - intros.
   rewrite <- not_VecIncluded_iff_VecNotIncluded.
@@ -345,7 +382,7 @@ Definition VecComparable {n} (a b: t nat n): Prop :=
 Definition VecNotComparable {n} (a b: t nat n): Prop :=
   a c/= b /\ b c/= a.
 
-Lemma VecComparable_iff_not_VecNotComparable {n} (a b: t _ (S n)):
+Lemma VecComparable_iff_not_VecNotComparable {n} (a b: t _ n):
   VecComparable a b <-> ~ (VecNotComparable a b).
 Proof.
 split.
@@ -353,9 +390,9 @@ split.
   intro. unfold VecComparable in H. unfold VecNotComparable in H0.
   destruct H0.
   destruct H.
-  - apply not_VecIncluded_iff_VecNotIncluded in H0. unfold not in H0. 
-    contradiction H0.
-  - apply not_VecIncluded_iff_VecNotIncluded in H1. unfold not in H1.
+  - apply not_VecIncluded_iff_VecNotIncluded in H0. 
+    contradiction.
+  - apply not_VecIncluded_iff_VecNotIncluded in H1.
     contradiction H1.
 + intro. 
   unfold VecNotComparable in H.
