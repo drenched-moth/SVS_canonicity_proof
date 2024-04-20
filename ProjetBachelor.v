@@ -361,6 +361,34 @@ split.
   assumption.
 Qed.
 
+(* Etude des ensembles *)
+
+Require Import Ensembles.
+
+Check Ensemble.
+Check Ensemble (t nat 2).
+
+Definition EnsembleVec {n A} := Ensemble (t A n).
+
+Notation "{}" := (Empty_set _).
+Notation "{ x1 , .. , xn }" :=
+  (Add _ (.. (Add _ {} xn) ..) x1).
+
+Check {}.
+Check {[1;2]}.
+Check {[1; 2], [2; 1]}.
+
+Search max.
+Check max 1 2.
+Compute max 1 2.
+
+Definition join2vec {n} (a b: t nat n) :=
+  (map2 max a b).
+
+Compute join2vec [1; 2; 1] [2; 1; 32].
+
+Definition join 
+
 (* Il faut définir les vecteurs symboliques *)
 
 
