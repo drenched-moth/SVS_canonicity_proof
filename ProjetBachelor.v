@@ -361,31 +361,196 @@ split.
   assumption.
 Qed.
 
+Definition join2vec {n} (a b: t nat n) :=
+  (map2 max a b).
+
 (* Etude des ensembles *)
+(* Pour le moment la structure des vecteurs semble complétement incompatible avec les options de la librairie standard pour faire des ensembles d'ordre partiel *)
+(* Il est très difficile pour l'instant de savoir quoi faire *)
 
-Require Import Ensembles.
+(* La solution en utilisant le module d'orderedtype semble plutot bien fonctionner si l'on veut décrire un ensemble muni d'un ordre partiel avec que des vecteurs de taille prédifini au moment de la création des modules *)
 
-Check Ensemble.
-Check Ensemble (t nat 2).
+Require Import VectorEq.
 
-Definition EnsembleVec {n A} := Ensemble (t A n).
+Require Import Coq.Lists.ListSet.
+Require Import Coq.Structures.Orders.
 
-Notation "{}" := (Empty_set _).
+Module VecOrderedType <: MiniDecidableType.
+  Definition t := list nat.
+  Lemma eq_dec : forall (x y : t), {eq x y} + {~ eq x y}.
+  Proof.
+    unfold t.
+    apply Coq.Lists.List.list_eq_dec.
+    apply Nat.eq_dec.
+  Qed.
+End VecOrderedType.
+
+Check set_add.
+Check set_add VectorEq.eq_dec (Vector.t nat 3) .
+
+Check Init.Datatypes.list.
+Check Init.Datatypes.list (Vector.t nat 3).
+
+
+
+(*Require Import Coq.Structures.OrderedTypeEx.
+*)
+Require Import Coq.MSets.MSetWeakList.
+
+
+
+
+Module VecSet := MSetWeakList.Make(Vec_UDT).
+Check VecSet.mem .
+Check VecSet.elt.
+Compute VecSet.elt.
+
+Notation "{}" := (VecSet.empty).
 Notation "{ x1 , .. , xn }" :=
-  (Add _ (.. (Add _ {} xn) ..) x1).
+  (VecSet.add x1 .. (VecSet.add xn {}) .. ).
+Check List.cons.
+Check List.cons 2 List.nil.
+Check VecSet.add.
+VecSet.add (List.cons 2 List.nil) VecSet.empty.
 
 Check {}.
 Check {[1;2]}.
 Check {[1; 2], [2; 1]}.
 
+
+Module VectorOrderedType <: UsualOrderedType.
+  (* Define the type of vectors *)
+  Definition t {n} := Vector.t nat n.
+
+  Definition eq {n} := @eq (t n).
+
+  (* Define equality on vectors 
+  Definition eq {n} (v1 v2 : t nat n) : Prop := v1 = v2. 
+*)
+  Definition eq_refl {n} := @eq_refl (t nat n).
+
+  Definition eq_sym {n} := @eq_sym (t nat n).
+
+  Definition eq_trans {n} := @eq_trans (t nat n).
+
+  Definition lt {n} (x y: t nat n) := x c= y.
+
+  Lemma lt_trans {n} (x y z : t nat n):
+    x c= y -> y c= z -> x c= z.
+  Proof.
+  intros.
+  dependent induction y.
+  - (* init *)
+    assert (x=[] /\ z=[]). { split; apply nil_spec. }
+    destruct H1. rewrite H1. rewrite H1 in H.
+    assumption.
+  - (* induction *)
+    assert (x=(hd x :: tl x) /\ z=(hd z :: tl z)). { split; apply eta. }
+    destruct H1. rewrite H1, H2.
+    apply Forall2_cons.
+    + rewrite H1 in H; rewrite H2 in H0.
+      apply forall2_arbitrary_hd in H, H0.
+      apply Nat.le_trans with (m:=h); assumption; assumption.
+    + apply IHy with (y0:=y). trivial. trivial. 
+      rewrite H1 in H; apply forall2_arbitrary_tl in H; assumption.
+      rewrite H2 in H0; apply forall2_arbitrary_tl in H0; assumption.
+  Qed.
+
+End VectorOrderedType.
+
+  Lemma 
+  (* Proof for the case of an empty vector *)
+Lemma eq_refl_nil : forall (v : t nat 0), eq v v.
+Proof.
+  intros v.
+  unfold eq.
+  trivial.
+Qed.
+(* Proof for the case of a non-empty vector *)
+Lemma eq_refl_cons : forall {n} (x : nat) (xs : t nat n), eq (x :: xs) (x :: xs).
+Proof.
+  intros n x xs.
+  unfold eq.
+  trivial.
+Qed.
+
+Lemma eq_refl_proof {n} (v: t nat n):
+  eq v v.
+Proof.
+unfold eq.
+trivial.
+Qed.
+
+  (* Reflexivity of equality *)
+  Definition eq_refl {n} : forall (v : t nat n), eq v v :=
+    fun v => eq_refl_proof v.
+      (*match v with
+      | Vector.nil _ => eq_refl_nil _ (* Proof that an empty vector is equal to itself *)
+      | x :: xs => eq_refl_cons x xs (* Proof that a non-empty vector is equal to itself *)
+      end.*)
+
+Lemma eq_symmetry_proof {n} (x y: t nat n):
+  eq x y -> eq y x.
+Proof.
+unfold eq. 
+intros.
+rewrite H.
+trivial.
+Qed.
+
+
+  (* Symmetry of equality *)
+  Definition eq_sym {n} : forall x y : t nat n, eq x y -> eq y x :=
+    fun v => eq_symmetry_proof v.
+
+Lemma eq_trans_proof {n} (x y z: t nat n):
+  eq x y -> eq y z -> eq x z.
+Proof.
+unfold eq.
+intros.
+rewrite H.
+assumption.
+Qed.
+
+  (* Transitivity of equality *)
+  Definition eq_trans {n} : forall x y z : t nat n, eq x y -> eq y z -> eq x z :=
+    fun v1 => fun v2 => fun v3 => eq_trans_proof v1 v2 v3.
+
+  (* Define comparison function on vectors *)
+  Definition compare (v1 v2 : t) : comparison :=
+    ___.
+
+  (* Define less-than relation on vectors *)
+  Definition lt (v1 v2 : t) : Prop :=
+    ___.
+
+  (* Decidability of equality *)
+  Definition eq_dec : forall x y : t, {eq x y} + {~ eq x y} :=
+    ___.
+
+End VectorOrderedType.
+
+
+
+Make Vector.
+
+Require Import Ensembles.
+
+
+
 Search max.
 Check max 1 2.
 Compute max 1 2.
 
-Definition join2vec {n} (a b: t nat n) :=
-  (map2 max a b).
-
 Compute join2vec [1; 2; 1] [2; 1; 32].
+
+Check [[1; 2]; [2; 1]].
+
+Definition join set :=
+  match set with
+  | nil => 
+  | x :: rest => join2vec x (join rest)
+  end.
 
 Definition join 
 
