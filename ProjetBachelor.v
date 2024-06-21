@@ -295,35 +295,21 @@ Qed.
 Lemma not_VecIncluded_iff_VecNotIncluded {n} (a b: t nat n):
   ~(a c= b) <-> a c/= b.
 Proof.
-intros.
-split; intros.
-- apply VecNotIncluded_iff_VecNotIncludedBool.
-  apply VecNotIncludedBool_iff_VecIncludedBool_false.
-  rewrite <- VecIncluded_iff_VecIncludedBool in H.
-  apply not_true_is_false.
-  assumption.
-- rewrite <- VecIncluded_iff_VecIncludedBool.
-  apply not_true_iff_false.
-  apply VecNotIncludedBool_iff_VecIncludedBool_false.
-  apply VecNotIncluded_iff_VecNotIncludedBool.  
-  assumption.
+rewrite <- VecIncluded_iff_VecIncludedBool.
+rewrite VecNotIncluded_iff_VecNotIncludedBool.
+rewrite not_true_iff_false.
+apply iff_sym.
+apply VecNotIncludedBool_iff_VecIncludedBool_false.
 Qed.
 
 Lemma not_VecIncluded_iff_VecNotIncluded_contra {n} (a b: t _ n):
   a c= b <-> ~(a c/= b).
 Proof.
-split.
-- intros.
-  rewrite <- not_VecIncluded_iff_VecNotIncluded.
-  intro. 
-  contradiction.
-- intros.
-  rewrite <- not_VecIncluded_iff_VecNotIncluded in H.
-  apply VecIncluded_iff_VecIncludedBool.
-  rewrite <- VecIncluded_iff_VecIncludedBool in H.
-  rewrite not_true_iff_false in H.
-  apply not_false_iff_true in H.
-  assumption.
+rewrite <- not_VecIncluded_iff_VecNotIncluded.
+rewrite <- VecIncluded_iff_VecIncludedBool.
+rewrite not_true_iff_false.
+rewrite not_false_iff_true.
+split; trivial.
 Qed.
 
 Definition VecComparable {n} (a b: t nat n): Prop :=
@@ -335,6 +321,7 @@ Definition VecNotComparable {n} (a b: t nat n): Prop :=
 Lemma VecComparable_iff_not_VecNotComparable {n} (a b: t _ n):
   VecComparable a b <-> ~ (VecNotComparable a b).
 Proof.
+(*ancienne preuve*)
 split.
 + intro. unfold not.
   intro. unfold VecComparable in H. unfold VecNotComparable in H0.
