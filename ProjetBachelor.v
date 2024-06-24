@@ -1,9 +1,6 @@
-Require Import Nat.
-Require Import Vector.
-Require Import Bvector.
-Require Import Logic.
-Require Import Equality.
+Require Import Nat Vector Bvector Logic Equality.
 Require Import Coq.Arith.Arith.
+Require Import Eqdep_dec.
 
 Lemma forall2_hd {n A} R (a b: t A (S n)):
   Forall2 R (hd a::tl a) (hd b::tl b) -> R (hd a) (hd b).
@@ -16,8 +13,10 @@ Qed.
 Lemma forall2_tl {n A} R (a b: t A (S n)):
   Forall2 R (hd a::tl a) (hd b::tl b) -> Forall2 R (tl a) (tl b).
 Proof.
-intros.
-dependent induction H.
+intros H.
+inversion H.
+apply Eqdep.EqdepTheory.inj_pair2 in H2,H5.
+subst.
 assumption.
 Qed.
 
@@ -45,7 +44,9 @@ Lemma forall2_arbitrary_tl {n A} R (ah bh: A) (av bv: t A n):
   Forall2 R (ah::av) (bh::bv) -> Forall2 R av bv.
 Proof.
 intros.
-dependent induction H; trivial.
+inversion H.
+apply Eqdep.EqdepTheory.inj_pair2 in H2,H5 ; subst.
+assumption.
 Qed.
 
 Lemma forall2_arbitrary_hd_tl {n A} R (ah bh: A) (av bv: t A n):
@@ -93,14 +94,14 @@ Lemma VecIncluded_iff_VecIncludedBool {n} (a b: t nat n):
 Proof.
 split.
 - intros.
-  dependent induction n.
+  induction n.
   + (* init *) 
     assert (a=[] /\ b=[]). { split; apply nil_spec. }
-    destruct H0. rewrite H0, H1. 
+    destruct H0; rewrite H0, H1. 
     apply Forall2_nil.
   + (* induction *)
     assert (a = (hd a :: tl a) /\ b = (hd b :: tl b)). { split; apply eta. }
-    destruct H0. rewrite H0, H1.
+    destruct H0; rewrite H0, H1.
     rewrite H0, H1 in H.
     apply VecIncludedBool_iff_head_tail in H. destruct H.
     apply Forall2_cons.
@@ -110,7 +111,8 @@ split.
         unfold "c=" in H2.
         assumption.
 - intros.
-  dependent induction H. compute; trivial.
+  induction H.
+  compute; trivial.
   apply VecIncludedBool_iff_head_tail.
   split.
   + apply leb_correct. assumption.
@@ -250,7 +252,7 @@ Proof.
 split ; intros.
 - compute in H. 
   destruct H as [H0 H1].
-  dependent induction H0.
+  induction H0.
   + (* init *)
     reflexivity.
   + (* induction *)
@@ -259,7 +261,7 @@ split ; intros.
     apply IHForall2 in H2.
     rewrite H2; rewrite H3. 
     reflexivity.
-- dependent induction H.
+- induction H.
   split; apply vec_eq_impl_incl; trivial.
 Qed.
 
@@ -309,7 +311,7 @@ rewrite <- not_VecIncluded_iff_VecNotIncluded.
 rewrite <- VecIncluded_iff_VecIncludedBool.
 rewrite not_true_iff_false.
 rewrite not_false_iff_true.
-split; trivial.
+reflexivity.
 Qed.
 
 Definition VecComparable {n} (a b: t nat n): Prop :=
@@ -321,30 +323,23 @@ Definition VecNotComparable {n} (a b: t nat n): Prop :=
 Lemma VecComparable_iff_not_VecNotComparable {n} (a b: t _ n):
   VecComparable a b <-> ~ (VecNotComparable a b).
 Proof.
-(*ancienne preuve*)
 split.
 + intro. unfold not.
   intro. unfold VecComparable in H. unfold VecNotComparable in H0.
   destruct H0.
-  destruct H.
-  - apply not_VecIncluded_iff_VecNotIncluded in H0. 
-    contradiction.
-  - apply not_VecIncluded_iff_VecNotIncluded in H1.
-    contradiction H1.
-+ intro. 
-  unfold VecNotComparable in H.
+  destruct H; apply not_VecIncluded_iff_VecNotIncluded in H0, H1; contradiction.
++ intro. unfold VecNotComparable in H.
+  assert (a c/=? b = false \/ b c/=? a = false). {  
+  apply andb_false_iff.
+  apply not_true_iff_false.
+  rewrite andb_true_iff.
+  repeat rewrite <- VecNotIncluded_iff_VecNotIncludedBool.
+  assumption.
+  }
   unfold VecComparable.
-  rewrite not_VecIncluded_iff_VecNotIncluded_contra.
-  rewrite not_VecIncluded_iff_VecNotIncluded_contra.
-  rewrite -> VecNotIncluded_iff_VecNotIncludedBool in H. 
-  rewrite -> VecNotIncluded_iff_VecNotIncludedBool in H.
-  rewrite <- andb_true_iff in H.
-  apply not_true_iff_false in H.
-  apply andb_false_iff in H.
-  rewrite VecNotIncluded_iff_VecNotIncludedBool.
-  rewrite VecNotIncluded_iff_VecNotIncludedBool.
-  rewrite not_true_iff_false.
-  rewrite not_true_iff_false.
+  repeat rewrite not_VecIncluded_iff_VecNotIncluded_contra.
+  repeat rewrite VecNotIncluded_iff_VecNotIncludedBool.
+  repeat rewrite not_true_iff_false.
   assumption.
 Qed.
 
