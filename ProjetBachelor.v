@@ -21,16 +21,23 @@ assumption.
 Qed.
 
 Lemma forall2_hd_tl {n A} R (a b: t A (S n)):
-  Forall2 R a b -> (R (hd a) (hd b) /\  Forall2 R (tl a) (tl b)).
+  Forall2 R a b <-> (R (hd a) (hd b) /\  Forall2 R (tl a) (tl b)).
 Proof.
 intros.
 assert (a = (hd a:: tl a) /\ b = (hd b:: tl b)). { split; apply eta. }
-destruct H0. rewrite H0, H1 in H.
+destruct H.
 split.
-- apply forall2_hd.
-  assumption.
-- apply forall2_tl.
-  assumption.
+- intros.
+  rewrite H, H0 in H1.
+  split.
+  + apply forall2_hd.
+    assumption.
+  + apply forall2_tl.
+    assumption.
+- intros.
+  destruct H1.
+  rewrite H, H0.
+  apply Forall2_cons; assumption.
 Qed.
 
 Lemma forall2_arbitrary_hd {n A} R (ah bh: A) (av bv: t A n):
@@ -247,7 +254,8 @@ apply Forall2_nth. intros.
 trivial.
 Qed. 
 
-Lemma vec_inclusion_antisymm: forall {n} (a b: t nat n), a c= b /\ b c= a <-> a = b.
+Lemma vec_inclusion_antisymm: forall {n} (a b: t nat n), 
+  a c= b /\ b c= a <-> a = b.
 Proof.
 split ; intros.
 - compute in H. 
@@ -259,8 +267,7 @@ split ; intros.
     apply forall2_arbitrary_hd_tl in H1; destruct H1.
     assert (x1=x2). { apply Nat.le_antisymm; assumption. }
     apply IHForall2 in H2.
-    rewrite H2; rewrite H3. 
-    reflexivity.
+    subst; reflexivity.
 - induction H.
   split; apply vec_eq_impl_incl; trivial.
 Qed.
@@ -314,6 +321,15 @@ rewrite not_false_iff_true.
 reflexivity.
 Qed.
 
+Lemma VecIncluded_TiersExclu {n} (a b: t nat n):
+  a c= b \/ a c/= b.
+Proof.
+rewrite VecNotIncluded_iff_VecNotIncludedBool.
+rewrite <- VecIncluded_iff_VecIncludedBool.
+rewrite -> VecNotIncludedBool_iff_VecIncludedBool_false.
+destruct (a c=? b); auto.
+Qed.
+
 Definition VecComparable {n} (a b: t nat n): Prop :=
   a c= b \/ b c= a.
 
@@ -341,6 +357,28 @@ split.
   repeat rewrite VecNotIncluded_iff_VecNotIncludedBool.
   repeat rewrite not_true_iff_false.
   assumption.
+Qed.
+
+Lemma VecIncluded_impl_VecNotIncludedInversed {n} (a b: t nat (S n)):
+  (a <> b) -> (a c= b) -> b c/= a.
+Proof.
+intros.
+apply not_VecIncluded_iff_VecNotIncluded.
+intro.
+unfold not in H; destruct H.
+apply vec_inclusion_antisymm.
+split; assumption.
+Qed.
+
+Lemma VecComparable_and_NotIncluded_impl_IncludedInversed {n} (a b: t nat n):
+  VecComparable a b -> (a c/= b) -> b c= a.
+Proof.
+intros. 
+unfold VecComparable in H.
+destruct H.
+- apply not_VecIncluded_iff_VecNotIncluded in H0.
+  contradiction H0.
+- assumption.
 Qed.
 
 Definition join2vec {n} (a b: t nat n) :=
