@@ -260,7 +260,7 @@ apply vec_eq_impl_incl.
 reflexivity.
 Qed.
 
-Lemma vec_inclusion_antisymm: forall {n} (a b: t nat n), 
+Lemma vec_inclusion_antisymm {n} (a b: t nat n): 
   a c= b /\ b c= a <-> a = b.
 Proof.
 split ; intros.
