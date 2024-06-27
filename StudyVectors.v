@@ -110,13 +110,12 @@ split.
     assert (a = (hd a :: tl a) /\ b = (hd b :: tl b)). { split; apply eta. }
     destruct H0; rewrite H0, H1.
     rewrite H0, H1 in H.
-    apply VecIncludedBool_iff_head_tail in H. destruct H.
+    apply VecIncludedBool_iff_head_tail in H; destruct H.
     apply Forall2_cons.
     ++  apply leb_complete. 
         assumption.
     ++  apply IHn in H2.
-        unfold "c=" in H2.
-        assumption.
+        assumption. (* unfold "c=" in H2. *)
 - intros.
   induction H.
   compute; trivial.
@@ -254,6 +253,13 @@ apply Forall2_nth. intros.
 trivial.
 Qed. 
 
+Lemma vec_inclusion_relfexivity {n} (a : t nat n):
+  a c= a.
+Proof.
+apply vec_eq_impl_incl.
+reflexivity.
+Qed.
+
 Lemma vec_inclusion_antisymm: forall {n} (a b: t nat n), 
   a c= b /\ b c= a <-> a = b.
 Proof.
@@ -270,6 +276,21 @@ split ; intros.
     subst; reflexivity.
 - induction H.
   split; apply vec_eq_impl_incl; trivial.
+Qed.
+
+Lemma vec_inclusion_trans {n} (a b c: t nat n):
+  a c= b -> b c= c -> a c= c.
+Proof.
+intros.
+induction n.
+- assert (a = [] /\ c = []). { split; apply nil_spec. }
+  destruct H1. rewrite H1, H2.
+  apply Forall2_nil.
+- apply forall2_hd_tl in H, H0.
+  destruct H, H0.
+  apply forall2_hd_tl; split.
+  + apply Nat.le_trans with (m := hd b); assumption.
+  + apply IHn with (b := tl b); assumption.
 Qed.
 
 Lemma vec_forall2_impl_exists2 {n} {A} R (a b: t A (S n)): 
